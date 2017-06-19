@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="utf-8">
+  <style type="text/css">
+    body {
+      display: block;
+      margin: 0px;
+      overflow: hidden;
+      padding: 0px;
+    }
+  </style>
+
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
+  <script type="text/javascript" src="http://underscorejs.org/underscore-min.js"></script>
+</head>
+<body>
+  <div id="container"></div>
+  <svg>
+    <radialGradient id="tip">
+      <stop offset="0" stop-color="white"/>
+      <stop offset="0.2" stop-color="pink"/>
+      <stop offset="1" stop-color="white"/>
+    </radialGradient>
+  </svg>
+  <script type="text/javascript">
+
+    var colorbackgroud = 'rgba(255,255,255,0)';
+    var colormapfill = 'rgba(128,124,139,0.61)';
+    var colormapstroke =  'rgba(255,255,255,1)';
+
+    //大小
+    // var height =480;
+    // var width = 960;
+ 
+    var height =800;
+    var width = 1600;
+    // var svg = d3.select('#container').append('svg');
+
+    // Create a selection for the container div and append the svg element
+    var div = d3.select('#container'),
+        svg = div.append('svg');
+
+    svg.append('g').classed('map', true);
+    svg.append('g').classed('dots', true);
+
+    var zoom = d3.behavior.zoom()
+      .scaleExtent([1.10])
+      .on("zoom",function(d){
+        d3.select(this).attr("transform",
+          "translate(" + d3.event.translate + ")" +
+          "scale(" + d3.event.scale + ")");
+      });
+  
+ 
+
+    // Set the size of the SVG element
+    svg.attr('width', width).attr('height', height);
+
+
+    var projection = d3.geo.equirectangular()
+        .translate([width / 2, height / 2]);
+        
+
+    //读取地图数据
+    d3.json("world-countries.json", function(data) {
+      /* Antarctica will not shown on the map */
+      var features = _.filter(data.features, function(value, key) {
+        return value.properties.name != 'Antarctica';
+      });
+
+
+      
+      path = d3.geo.path().projection(projection);
+
+      svg.attr('width', width).attr('height', height);
+      svg.select('g.map').selectAll('path').data(features).enter().append('svg:path')
+        .attr('d', path)
+        .on('mouseover', function(data) {
+          // d3.select(this).attr('fill', 'rgba(2,2,139,0.61)');
+        })
+        .on('mouseout', function(data) {
+           // d3.select(this).attr('fill', 'rgba(128,124,139,0.61');
+        })
+        .attr('fill', colormapfill)
+        .attr('stroke', colormapstroke)
+        .attr('stroke-width', 1);
+            
+     
+    });
+
+
+
+
+    //读取csv
+    d3.csv('data.csv', function(err, csvdata) {
+
+      if (err) { throw err; console.log(error);}
+
+      
+
+      var rScale = d3.scale.linear()
+        // .domain(d3.extent(csvdata, function(d) { return d.total; }))
+        .domain([88,815442])
+        .range([10, 30]);
+
+      var circles = svg.select('g.dots')
+        .selectAll('circle.total')
+        .data(csvdata);
+
+
+      circles.enter().append('circle')
+        .classed('total', true);
+
+      circles
+        .attr('r', function(d) {  /*console.log("r = " + rScale(d.total));*/ return rScale(d.total); })
+        .attr('cx', function(d) {  return projection([d.lon,d.lat])[0]; })
+        .attr('cy', function(d) { return projection([d.lon,d.lat])[1]; })
+        .attr('fill',  'rgba(169,84,87,0.6)');
+
+      circles.exit().remove();
+
+      
+    });
+
+// zoom and pan
+// zoom and pan
+var zoom = d3.behavior.zoom()
+    .on("zoom",function() {
+        svg.attr("transform","translate("+ 
+            d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+        svg.selectAll("path")  
+            .attr("d", path.projection(projection)); 
+  });
+
+svg.call(zoom)
+
+  </script>
+</body>
+</html>
